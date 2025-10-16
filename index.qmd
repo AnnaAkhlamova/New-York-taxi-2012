@@ -185,4 +185,3 @@ peak_plot
 ```
 
 The most popular season to use taxi is spring, especially at thursday.
-

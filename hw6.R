@@ -1,64 +1,14 @@
----
-title: "New York Taxi 🚕"
-subtitle: "Assignment 6"
-author: "Anna Akhlamova"
-format: 
-  html: default
-  docx: default
-  typst: default
-editor: visual
----
-▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄<br>
-This report explores a subset of the NYC taxi dataset *2012 yellow *cars 🚖. The main questions are:<br>
+library(arrow)
+library(duckplyr, warn.conflicts = FALSE)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(ggplot2)
+library(plotly)
+library(patchwork)
 
-- How do average *fares* vary by *month and season* for different vendors?<br>
-- When are the *peak hours* and days of the week for taxi trips across seasons?<br>
-
-We use a Parquet dataset covering multiple months and vendors.<br>
-```{r}
-#| label: setup
-#| include: false
-
-library(pacman)
-
-p_load(
-  arrow,
-  duckplyr, warn.conflicts = FALSE,
-  dplyr,
-  tidyr,
-  ggplot2,
-  plotly,
-  patchwork,
-  lubridate
-)
-```
-Reading Parquet dataset:
-```{r}
-#| code-fold: true
 nyc <- read_parquet_duckdb("D:/Anna Akhlamova/Rsomedatasettaxi/nyc-taxi/**/*.parquet")
-```
-<br>I choose this type of reading because read_parquet_duckdb() leverages DuckDB’s query engine, which is often faster than Arrow’s read_parquet() when working with large datasets.
 
-## Type of taxi service and how much people have used it
-```{r}
-#| code-fold: true
-rate_code_count <- nyc |> 
-  filter(!is.na(rate_code)) |> 
-  count(rate_code) |> 
-  arrange(desc(n))
-
-rate_code_count
-```
-▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄<br>
-
-
-## Differnce in average *fares* by *month and season* 
-
-We focus on trips with valid vendor_name and compute monthly and seasonal summaries:<br>
-
-Grouping necessary data<br>
-```{r}
-#| code-fold: true
 monthly_summary <- nyc |>
   filter(!is.na(vendor_name)) |>
   summarise(
@@ -86,11 +36,6 @@ season_summary <- monthly_summary |>
     .groups = "drop"
   )
 
-```
-
-Plotting it<br>
-```{r}
-#| code-fold: true
 
 month_plot <- ggplot(monthly_summary,
                      aes(x = factor(month_name, levels = month.abb),
@@ -115,16 +60,7 @@ combined_plot <- month_plot / season_plot +
   theme(legend.position = "bottom")
 
 combined_plot
-```
-From visualization we can clearly see that the biggest price was during autumn 
-▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄▀▄▀▀▄▀▄<br>
 
-
-## *peak hours* and most popular *days* of the week
-
-Grouping necessary data<br>
-```{r}
-#| code-fold: true
 
 
 nyc_peaks <- nyc |>
@@ -150,12 +86,6 @@ daily_all <- nyc_peaks |>
   group_by(season, day_of_week) |>
   summarise(n_trips = n(), .groups = "drop")
 
-```
-
-Plotting it<br>
-```{r}
-#| code-fold: true
-
 hour_plot <- ggplot(hourly_all, aes(x = factor(hour), y = n_trips, fill = season)) +
   geom_col(position = "dodge") +
   labs(title = "Пікові години по сезонах", x = "Година", y = "Кількість поїздок") +
@@ -171,7 +101,5 @@ day_plot <- ggplot(daily_all, aes(x = day_of_week, y = n_trips, fill = season)) 
 peak_plot <- hour_plot / day_plot + plot_layout(guides = "collect") &
   theme(legend.position = "bottom")
 
+combined_plot
 peak_plot
-```
-The most popular season to use taxi is spring, especially at thursday.
-
